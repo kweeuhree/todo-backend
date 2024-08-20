@@ -1,30 +1,44 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 
+	"github.com/julienschmidt/httprouter" // router
 	"todo-backend.kweeuhree/internal/models"
 )
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
-	// Check if the current request URL path exactly matches "/". If it
-	// doesn't, use the http.NotFound() function to send a 404 response to the client.
-	// return from the handler. Failing to return the handler would result
-	// in "hello world" message being printed as well
-	if r.URL.Path != "/" {
-		http.NotFound(w, r)
+	todos, err := app.todos.All()
+	if err != nil {
+		app.serverError(w, err)
 		return
 	}
 
-	w.Write([]byte("hello world"))
+	// Set the Content-Type header to application/json if you are sending JSON
+	w.Header().Set("Content-Type", "application/json")
+
+	// Write the todos to the response as JSON
+	err = json.NewEncoder(w).Encode(todos)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
 }
 
+// read
 func (app *application) todoView(w http.ResponseWriter, r *http.Request) {
-	// get id from URL query
-	id, err := strconv.Atoi(r.URL.Query().Get("id"))
+	// use the ParamsFromContext() function to retrieve a slice containing
+
+	// these parameter names and values like so:
+	params := httprouter.ParamsFromContext(r.Context())
+
+	// We can then use the ByName() method to get the value of the "id" named
+	// parameter from the slice and validate it as normal.
+	id, err := strconv.Atoi(params.ByName("id"))
 
 	// return a 404 Not Found in case of invalid id or error
 	if err != nil || id < 1 {
@@ -46,3 +60,12 @@ func (app *application) todoView(w http.ResponseWriter, r *http.Request) {
 	// write the todo data as a plain-text HTTP response body
 	fmt.Fprintf(w, "%+v", todo)
 }
+
+// create
+func (app *application) todoCreate(w http.ResponseWriter, r *http.Request) {
+
+}
+
+// update
+
+// delete

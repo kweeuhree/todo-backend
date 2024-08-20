@@ -1,17 +1,27 @@
 package main
 
-import "net/http"
+import (
+	"net/http"
 
-func (app *application) routes() *http.ServeMux {
-	// initialize a new servemux
-	mux := http.NewServeMux()
+	"github.com/julienschmidt/httprouter" // router
+	"github.com/justinas/alice"           // middleware
+)
+
+func (app *application) routes() http.Handler {
+	// Initialize the router.
+	router := httprouter.New()
 
 	fileServer := http.FileServer(http.Dir("./ui/static/"))
 
-	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
+	router.Handler(http.MethodGet, "/static/*filepath", http.StripPrefix("/static", fileServer))
 
-	mux.HandleFunc("/", app.home)
-	mux.HandleFunc("/todo/view", app.todoView) // fixed path
+	router.HandlerFunc(http.MethodGet, "/api/", app.home)
+	router.HandlerFunc(http.MethodGet, "/api/todo/view", app.todoView)      // fixed path
+	router.HandlerFunc(http.MethodPost, "/api/todo/create", app.todoCreate) // fixed path
 
-	return mux
+	// Create a middleware chain containing our 'standard' middleware
+	// which will be used for every request our application receives.
+	standard := alice.New(app.recoverPanic, app.logRequest, secureHeaders)
+	// Return the 'standard' middleware chain followed by the servemux.
+	return standard.Then(router)
 }
