@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"      // validation
+	"unicode/utf8" // validation
 
+	// validation
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter" // router
 	"todo-backend.kweeuhree/internal/models"
@@ -84,23 +87,43 @@ func (app *application) todoCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// get body from the requets, and define a new id with UUID
-	newId := uuid.New().String()
+	// get body from the request, and define a new id with UUID
+	// err := r.ParseForm()
 
-	err := r.ParseForm()
+	// if err != nil {
+	// 	app.clientError(w, http.StatusBadRequest)
+	// 	return
+	// }
 
-	if err != nil {
-		app.clientError(w, http.StatusBadRequest)
-		return
-	}
-
+	// Decode the JSON body into the input struct
 	var input TodoInput
-
-	err = json.NewDecoder(r.Body).Decode(&input)
+	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}
+
+	// Initialize a map to hold any validation errors for the form fields.
+	fieldErrors := make(map[string]string)
+
+	// Check that the Content value isn't blank.
+	if strings.TrimSpace(input.Body) == "" {
+		fieldErrors["body"] = "This field cannot be blank"
+	} else if utf8.RuneCountInString(input.Body) > 200 {
+		fieldErrors["body"] = "This field cannot be more than 100 characters long"
+	}
+
+	// If there are any errors, dump them in a plain text HTTP response and
+	// return from the handler.
+	if len(fieldErrors) > 0 {
+		fmt.Fprint(w, fieldErrors)
+		return
+	}
+
+	// Set the Content-Type header to application/json if you are sending JSON
+	w.Header().Set("Content-Type", "application/json")
+
+	newId := uuid.New().String()
 
 	// Insert the new todo using the ID and body
 	id, err := app.todos.Insert(newId, input.Body)
@@ -109,10 +132,7 @@ func (app *application) todoCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set the Content-Type header to application/json if you are sending JSON
-	w.Header().Set("Content-Type", "application/json")
-
-	// Create a response struct that includes both ID and body
+	// Create a response that includes both ID and body
 	response := TodoResponse{
 		ID:   id,
 		Body: input.Body,
