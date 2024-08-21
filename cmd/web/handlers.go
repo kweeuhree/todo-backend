@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter" // router
 	"todo-backend.kweeuhree/internal/models"
 )
@@ -63,7 +64,54 @@ func (app *application) todoView(w http.ResponseWriter, r *http.Request) {
 
 // create
 func (app *application) todoCreate(w http.ResponseWriter, r *http.Request) {
+	// check if method is POST
+	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", "POST")
 
+		// use clientError helper instead of a http.Error shortcut
+		app.clientError(w, http.StatusMethodNotAllowed)
+		return
+	}
+
+	// get body from the requets, and define a new id with UUID
+	newId := uuid.New().String()
+
+	err := r.ParseForm()
+
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+	// get body as string
+	var input struct {
+		Body string `json:"body"`
+	}
+
+	err = json.NewDecoder(r.Body).Decode(&input)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	// Insert the new todo using the ID and body
+	id, err := app.todos.Insert(newId, input.Body)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	// Set the Content-Type header to application/json if you are sending JSON
+	w.Header().Set("Content-Type", "application/json")
+
+	// Write the todos to the response as JSON
+	err = json.NewEncoder(w).Encode(id)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	// Redirect the user to the relevant page for the snippet.
+	http.Redirect(w, r, fmt.Sprintf("/snippet/view?id=%d", id), http.StatusSeeOther)
 }
 
 // update

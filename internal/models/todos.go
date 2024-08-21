@@ -9,7 +9,7 @@ import (
 // define a todo type
 type Todo struct {
 	ID      string
-	Body    string `json:"body"`
+	Body    string
 	Created time.Time
 }
 
@@ -81,7 +81,7 @@ func (m *TodoModel) Get(id int) (*Todo, error) {
 func (m *TodoModel) All() ([]*Todo, error) {
 	// SQL statement we want to execute
 	stmt := `SELECT * FROM todos
-	ORDER BY id`
+	ORDER BY created DESC`
 
 	// Use the Query() method on the connection pool to execute the stmt
 	// this returns a sql.Rows resultset containing the result of our query
