@@ -6,18 +6,20 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"      // validation
-	"unicode/utf8" // validation
 
+	// validation
+	// validation
 	// validation
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter" // router
 	"todo-backend.kweeuhree/internal/models"
+	"todo-backend.kweeuhree/internal/validator"
 )
 
 // Input struct for creating and updating todos
 type TodoInput struct {
 	Body string `json:"body"`
+	validator.Validator
 }
 
 // Response struct for returning todo data
@@ -95,22 +97,9 @@ func (app *application) todoCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Initialize a map to hold any validation errors for the form fields.
-	fieldErrors := make(map[string]string)
-
-	// Check that the Content value isn't blank.
-	if strings.TrimSpace(input.Body) == "" {
-		fieldErrors["body"] = "This field cannot be blank"
-	} else if utf8.RuneCountInString(input.Body) > 200 {
-		fieldErrors["body"] = "This field cannot be more than 100 characters long"
-	}
-
-	// If there are any errors, dump them in a plain text HTTP response and
-	// return from the handler.
-	if len(fieldErrors) > 0 {
-		fmt.Fprint(w, fieldErrors)
-		return
-	}
+	// validate input
+	input.CheckField(validator.NotBlank(input.Body), "body", "This field cannot be blank")
+	input.CheckField(validator.MaxChars(input.Body, 200), "body", "This field cannot be more than 200 characters long")
 
 	// Set the Content-Type header to application/json if you are sending JSON
 	w.Header().Set("Content-Type", "application/json")
