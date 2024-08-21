@@ -103,17 +103,32 @@ func (app *application) todoCreate(w http.ResponseWriter, r *http.Request) {
 	// Set the Content-Type header to application/json if you are sending JSON
 	w.Header().Set("Content-Type", "application/json")
 
-	// Write the todos to the response as JSON
-	err = json.NewEncoder(w).Encode(id)
+	// Create a response struct that includes both ID and body
+	response := struct {
+		ID   string `json:"id"`
+		Body string `json:"body"`
+	}{
+		ID:   id,
+		Body: input.Body,
+	}
+
+	// Write the response struct to the response as JSON
+	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
 
 	// Redirect the user to the relevant page for the snippet.
-	http.Redirect(w, r, fmt.Sprintf("/snippet/view?id=%d", id), http.StatusSeeOther)
+	// http.Redirect(w, r, fmt.Sprintf("/snippet/view?id=%d", id), http.StatusSeeOther)
 }
 
 // update
+func (app *application) todoUpdate(w http.ResponseWriter, r *http.Request) {
+
+}
 
 // delete
+func (app *application) todoDelete(w http.ResponseWriter, r *http.Request) {
+
+}

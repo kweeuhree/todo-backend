@@ -77,7 +77,7 @@ func (m *TodoModel) Get(id int) (*Todo, error) {
 	return t, nil
 }
 
-// return the 10 most recently created todos
+// return the all created todos
 func (m *TodoModel) All() ([]*Todo, error) {
 	// SQL statement we want to execute
 	stmt := `SELECT * FROM todos
@@ -129,3 +129,7 @@ func (m *TodoModel) All() ([]*Todo, error) {
 	// If everything went OK then return the Snippets slice.
 	return todos, nil
 }
+
+// update
+
+// delete
