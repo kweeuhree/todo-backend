@@ -89,6 +89,9 @@ func (app *application) todoCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Set the Content-Type header to application/json if you are sending JSON
+	w.Header().Set("Content-Type", "application/json")
+
 	// Decode the JSON body into the input struct
 	var input TodoInput
 	err := json.NewDecoder(r.Body).Decode(&input)
@@ -101,8 +104,13 @@ func (app *application) todoCreate(w http.ResponseWriter, r *http.Request) {
 	input.CheckField(validator.NotBlank(input.Body), "body", "This field cannot be blank")
 	input.CheckField(validator.MaxChars(input.Body, 200), "body", "This field cannot be more than 200 characters long")
 
-	// Set the Content-Type header to application/json if you are sending JSON
-	w.Header().Set("Content-Type", "application/json")
+	if !input.Valid() {
+		err := json.NewEncoder(w).Encode(input.FieldErrors)
+		if err != nil {
+			app.serverError(w, err)
+		}
+		return
+	}
 
 	newId := uuid.New().String()
 
