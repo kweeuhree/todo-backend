@@ -12,6 +12,17 @@ import (
 	"todo-backend.kweeuhree/internal/models"
 )
 
+// Input struct for creating and updating todos
+type TodoInput struct {
+	Body string `json:"body"`
+}
+
+// Response struct for returning todo data
+type TodoResponse struct {
+	ID   string `json:"id"`
+	Body string `json:"body"`
+}
+
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	todos, err := app.todos.All()
 	if err != nil {
@@ -82,10 +93,8 @@ func (app *application) todoCreate(w http.ResponseWriter, r *http.Request) {
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}
-	// get body as string
-	var input struct {
-		Body string `json:"body"`
-	}
+
+	var input TodoInput
 
 	err = json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
@@ -104,10 +113,7 @@ func (app *application) todoCreate(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	// Create a response struct that includes both ID and body
-	response := struct {
-		ID   string `json:"id"`
-		Body string `json:"body"`
-	}{
+	response := TodoResponse{
 		ID:   id,
 		Body: input.Body,
 	}
