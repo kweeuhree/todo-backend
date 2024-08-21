@@ -21,9 +21,7 @@ func secureHeaders(next http.Handler) http.Handler {
 	reactAddress := os.Getenv("REACT_ADDRESS")
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Note: This is split across multiple lines for readability. You
-		// don't need to do this in your own code.
-		// Allow all origins (or specify allowed origins)
+		// Specify origin
 		w.Header().Set("Access-Control-Allow-Origin", reactAddress)
 
 		// Allow specific HTTP methods
