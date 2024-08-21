@@ -87,14 +87,6 @@ func (app *application) todoCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// get body from the request, and define a new id with UUID
-	// err := r.ParseForm()
-
-	// if err != nil {
-	// 	app.clientError(w, http.StatusBadRequest)
-	// 	return
-	// }
-
 	// Decode the JSON body into the input struct
 	var input TodoInput
 	err := json.NewDecoder(r.Body).Decode(&input)
@@ -144,9 +136,6 @@ func (app *application) todoCreate(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, err)
 		return
 	}
-
-	// Redirect the user to the relevant page for the snippet.
-	// http.Redirect(w, r, fmt.Sprintf("/snippet/view?id=%d", id), http.StatusSeeOther)
 }
 
 // update
