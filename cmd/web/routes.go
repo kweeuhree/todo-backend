@@ -18,14 +18,16 @@ func (app *application) routes() http.Handler {
 	})
 
 	fileServer := http.FileServer(http.Dir("./ui/static/"))
-
 	router.Handler(http.MethodGet, "/static/*filepath", http.StripPrefix("/static", fileServer))
 
-	router.HandlerFunc(http.MethodGet, "/api/", app.home)
-	router.HandlerFunc(http.MethodGet, "/api/todo/view", app.todoView)        // fixed path
-	router.HandlerFunc(http.MethodPost, "/api/todo/create", app.todoCreate)   // fixed path
-	router.HandlerFunc(http.MethodPut, "/api/todo/update", app.todoUpdate)    // fixed path
-	router.HandlerFunc(http.MethodDelete, "/api/todo/delete", app.todoDelete) // fixed path
+	dynamic := alice.New(app.sessionManager.LoadAndSave)
+
+	router.Handler(http.MethodGet, "/api", dynamic.ThenFunc(app.home))
+	router.Handler(http.MethodGet, "/api/todo/view", dynamic.ThenFunc(app.todoView))        // fixed path
+	router.Handler(http.MethodPost, "/api/todo/create", dynamic.ThenFunc(app.todoCreate))   // fixed path
+	router.Handler(http.MethodPut, "/api/todo/update", dynamic.ThenFunc(app.todoUpdate))    // fixed path
+	router.Handler(http.MethodDelete, "/api/todo/delete", dynamic.ThenFunc(app.todoDelete)) // fixed path
+	// router.Handler(http.MethodGet, "/api/test-cookie", dynamic.ThenFunc(app.testCookie))
 
 	// Create a middleware chain containing our 'standard' middleware
 	// which will be used for every request our application receives.

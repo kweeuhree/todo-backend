@@ -10,6 +10,7 @@ import (
 type Todo struct {
 	ID      string
 	Body    string
+	Status  bool
 	Created time.Time
 }
 
@@ -112,7 +113,7 @@ func (m *TodoModel) All() ([]*Todo, error) {
 		// row.Scan() must be pointers to the place you want to copy the data into, and
 		// the number of arguments must be exactly the same as the number of
 		// columns returned by your statement.
-		err = rows.Scan(&t.ID, &t.Body, &t.Created)
+		err = rows.Scan(&t.ID, &t.Body, &t.Created, &t.Status)
 		if err != nil {
 			return nil, err
 		}

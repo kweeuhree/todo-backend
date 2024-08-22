@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	// models
 	"todo-backend.kweeuhree/internal/models"
@@ -18,14 +19,18 @@ import (
 	// database/sql package. The trick to getting around this is to alias the package name
 	// to the blank identifier. This is standard practice for most of Go’s SQL drivers
 	_ "github.com/go-sql-driver/mysql" // with underscore
+
+	"github.com/alexedwards/scs/mysqlstore"
+	"github.com/alexedwards/scs/v2"
 )
 
 // Define an application struct to hold the application-wide dependencies for
 // the web application.
 type application struct {
-	errorLog *log.Logger
-	infoLog  *log.Logger
-	todos    *models.TodoModel
+	errorLog       *log.Logger
+	infoLog        *log.Logger
+	todos          *models.TodoModel
+	sessionManager *scs.SessionManager
 }
 
 func main() {
@@ -63,10 +68,34 @@ func main() {
 	// the main() function exits
 	defer db.Close()
 
+	// Create a new MySQL session store using the connection pool.
+	store := mysqlstore.New(db)
+
+	// Initialize a new session manager.
+	sessionManager := scs.New()
+
+	// Use the MySQL session store with the session manager.
+	sessionManager.Store = store
+
+	// initialize a new session manager, configure to use MySQL db
+	// set lifetime of 12 hours
+	// -- The scs.New() function returns a pointer to a SessionManager
+	// -- struct which holds configuration settings for sessions
+	// sessionManager := scs.New()
+	sessionManager.Lifetime = 12 * time.Hour
+	// sessionManager.Cookie.Name = "session_id"
+	// sessionManager.Cookie.Path = "/"
+	// sessionManager.Cookie.SameSite = http.SameSiteLaxMode
+	// sessionManager.Cookie.HttpOnly = true
+	// sessionManager.Cookie.Secure = false
+
+	// sessionManager.Store = mysqlstore.New(db)
+
 	app := &application{
-		errorLog: errorLog,
-		infoLog:  infoLog,
-		todos:    &models.TodoModel{DB: db},
+		errorLog:       errorLog,
+		infoLog:        infoLog,
+		todos:          &models.TodoModel{DB: db},
+		sessionManager: sessionManager,
 	}
 
 	srv := &http.Server{

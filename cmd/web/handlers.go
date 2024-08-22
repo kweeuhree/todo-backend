@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -24,8 +25,9 @@ type TodoInput struct {
 
 // Response struct for returning todo data
 type TodoResponse struct {
-	ID   string `json:"id"`
-	Body string `json:"body"`
+	ID    string `json:"id"`
+	Body  string `json:"body"`
+	Flash string
 }
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
@@ -74,6 +76,7 @@ func (app *application) todoView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	app.sessionManager.Put(r.Context(), "flash", "Todo successfully added!")
 	// write the todo data as a plain-text HTTP response body
 	fmt.Fprintf(w, "%+v", todo)
 }
@@ -100,6 +103,8 @@ func (app *application) todoCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Printf("Received input.Body: %s", input.Body)
+
 	// validate input
 	input.CheckField(validator.NotBlank(input.Body), "body", "This field cannot be blank")
 	input.CheckField(validator.MaxChars(input.Body, 200), "body", "This field cannot be more than 200 characters long")
@@ -121,11 +126,15 @@ func (app *application) todoCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// app.sessionManager.Put(r.Context(), "flash", "Todo successfully added!")
+
 	// Create a response that includes both ID and body
 	response := TodoResponse{
 		ID:   id,
 		Body: input.Body,
 	}
+
+	app.sessionManager.Put(r.Context(), "flash", "This is a flash message!")
 
 	// Write the response struct to the response as JSON
 	err = json.NewEncoder(w).Encode(response)
@@ -144,3 +153,21 @@ func (app *application) todoUpdate(w http.ResponseWriter, r *http.Request) {
 func (app *application) todoDelete(w http.ResponseWriter, r *http.Request) {
 
 }
+
+// func (app *application) testCookie(w http.ResponseWriter, r *http.Request) {
+// 	// Example of setting a value in the session
+// 	app.sessionManager.Put(r.Context(), "flash", "This is a flash message!")
+// 	fmt.Fprintln(w, "Cookie has been set")
+// }
+
+// func (app *application) testCookie(w http.ResponseWriter, r *http.Request) {
+// 	http.SetCookie(w, &http.Cookie{
+// 		Name:     "testCookie",
+// 		Value:    "testValue",
+// 		Path:     "/",
+// 		HttpOnly: true,                 // Add HttpOnly for security
+// 		SameSite: http.SameSiteLaxMode, // Or SameSiteStrictMode if appropriate
+// 		Secure:   false,                // Set to true if using HTTPS
+// 	})
+// 	fmt.Fprintln(w, "Cookie has been set")
+// }
