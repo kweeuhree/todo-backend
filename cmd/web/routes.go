@@ -23,10 +23,10 @@ func (app *application) routes() http.Handler {
 	dynamic := alice.New(app.sessionManager.LoadAndSave)
 
 	router.Handler(http.MethodGet, "/api", dynamic.ThenFunc(app.home))
-	router.Handler(http.MethodGet, "/api/todo/view", dynamic.ThenFunc(app.todoView))        // fixed path
-	router.Handler(http.MethodPost, "/api/todo/create", dynamic.ThenFunc(app.todoCreate))   // fixed path
-	router.Handler(http.MethodPut, "/api/todo/update", dynamic.ThenFunc(app.todoUpdate))    // fixed path
-	router.Handler(http.MethodDelete, "/api/todo/delete", dynamic.ThenFunc(app.todoDelete)) // fixed path
+	router.Handler(http.MethodGet, "/api/todo/view", dynamic.ThenFunc(app.todoView))         // fixed path
+	router.Handler(http.MethodPost, "/api/todo/create", dynamic.ThenFunc(app.todoCreate))    // fixed path
+	router.Handler(http.MethodPut, "/api/todo/update/:id", dynamic.ThenFunc(app.todoUpdate)) // fixed path
+	router.Handler(http.MethodDelete, "/api/todo/delete", dynamic.ThenFunc(app.todoDelete))  // fixed path
 	// router.Handler(http.MethodGet, "/api/test-cookie", dynamic.ThenFunc(app.testCookie))
 
 	// Create a middleware chain containing our 'standard' middleware

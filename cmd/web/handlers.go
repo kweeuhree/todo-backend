@@ -92,7 +92,7 @@ func (app *application) todoCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set the Content-Type header to application/json if you are sending JSON
+	// Set the Content-Type header to application/json
 	w.Header().Set("Content-Type", "application/json")
 
 	// Decode the JSON body into the input struct
@@ -126,8 +126,6 @@ func (app *application) todoCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// app.sessionManager.Put(r.Context(), "flash", "Todo successfully added!")
-
 	// Create a response that includes both ID and body
 	response := TodoResponse{
 		ID:   id,
@@ -146,28 +144,71 @@ func (app *application) todoCreate(w http.ResponseWriter, r *http.Request) {
 
 // update
 func (app *application) todoUpdate(w http.ResponseWriter, r *http.Request) {
+	log.Printf("attempting update")
+	// Set the Content-Type header to application/json
+	w.Header().Set("Content-Type", "application/json")
+	// these parameter names and values like so:
+	params := httprouter.ParamsFromContext(r.Context())
 
+	// We can then use the ByName() method to get the value of the "id" named
+	// parameter from the slice and validate it as normal.
+	id := params.ByName("id")
+	log.Printf("current todo id: %s", id)
+
+	if id == "" {
+		app.notFound(w)
+		log.Printf("exiting due to id")
+		return
+	}
+
+	// Decode the JSON body into the input struct
+	var input TodoInput
+	err := json.NewDecoder(r.Body).Decode(&input)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		log.Printf("error message %s", err)
+		log.Printf("exiting after decoding attempt")
+		return
+	}
+
+	log.Printf("Received input.Body: %s", input.Body)
+
+	// validate input
+	input.CheckField(validator.NotBlank(input.Body), "body", "This field cannot be blank")
+	input.CheckField(validator.MaxChars(input.Body, 200), "body", "This field cannot be more than 200 characters long")
+
+	if !input.Valid() {
+		err := json.NewEncoder(w).Encode(input.FieldErrors)
+		if err != nil {
+			app.serverError(w, err)
+		}
+		return
+	}
+
+	// Update the new todo using the ID and body
+	err = app.todos.Put(id, input.Body)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	// Create a response that includes both ID and body
+	response := TodoResponse{
+		ID:   id,
+		Body: input.Body,
+	}
+
+	app.sessionManager.Put(r.Context(), "flash", "This is a flash message!")
+
+	// Write the response struct to the response as JSON
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
 }
 
 // delete
 func (app *application) todoDelete(w http.ResponseWriter, r *http.Request) {
 
 }
-
-// func (app *application) testCookie(w http.ResponseWriter, r *http.Request) {
-// 	// Example of setting a value in the session
-// 	app.sessionManager.Put(r.Context(), "flash", "This is a flash message!")
-// 	fmt.Fprintln(w, "Cookie has been set")
-// }
-
-// func (app *application) testCookie(w http.ResponseWriter, r *http.Request) {
-// 	http.SetCookie(w, &http.Cookie{
-// 		Name:     "testCookie",
-// 		Value:    "testValue",
-// 		Path:     "/",
-// 		HttpOnly: true,                 // Add HttpOnly for security
-// 		SameSite: http.SameSiteLaxMode, // Or SameSiteStrictMode if appropriate
-// 		Secure:   false,                // Set to true if using HTTPS
-// 	})
-// 	fmt.Fprintln(w, "Cookie has been set")
-// }

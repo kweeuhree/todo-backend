@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql"
 	"errors"
+	"log"
 	"time"
 )
 
@@ -132,5 +133,20 @@ func (m *TodoModel) All() ([]*Todo, error) {
 }
 
 // update
+// return the all created todos
+func (m *TodoModel) Put(id string, body string) error {
+	// SQL statement we want to execute
+	stmt := `UPDATE todos SET body = ? WHERE id = ?`
+
+	// Execute the statement with the provided id and body
+	_, err := m.DB.Exec(stmt, body, id)
+	if err != nil {
+		log.Printf("Error while attempting todo update %s", err)
+		return err
+	}
+
+	log.Printf("Updated successfully")
+	return nil
+}
 
 // delete
