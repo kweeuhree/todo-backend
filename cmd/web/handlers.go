@@ -210,5 +210,29 @@ func (app *application) todoUpdate(w http.ResponseWriter, r *http.Request) {
 
 // delete
 func (app *application) todoDelete(w http.ResponseWriter, r *http.Request) {
+	log.Printf("attempting delete")
+	// Set the Content-Type header to application/json
+	w.Header().Set("Content-Type", "application/json")
+	// these parameter names and values like so:
+	params := httprouter.ParamsFromContext(r.Context())
 
+	// We can then use the ByName() method to get the value of the "id" named
+	// parameter from the slice and validate it as normal.
+	id := params.ByName("id")
+	log.Printf("current todo id: %s", id)
+
+	if id == "" {
+		app.notFound(w)
+		log.Printf("exiting due to id")
+		return
+	}
+
+	// Delete the todo using the ID
+	err := app.todos.Delete(id)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	app.sessionManager.Put(r.Context(), "flash", "This is a flash message!")
 }

@@ -133,7 +133,6 @@ func (m *TodoModel) All() ([]*Todo, error) {
 }
 
 // update
-// return the all created todos
 func (m *TodoModel) Put(id string, body string) error {
 	// SQL statement we want to execute
 	stmt := `UPDATE todos SET body = ? WHERE id = ?`
@@ -150,3 +149,29 @@ func (m *TodoModel) Put(id string, body string) error {
 }
 
 // delete
+func (m *TodoModel) Delete(id string) error {
+	// Execute the statement with the provided id
+	stmt := `DELETE FROM todos WHERE id = ?`
+
+	result, err := m.DB.Exec(stmt, id)
+	if err != nil {
+		log.Printf("Error while deleting a todo: %s", err)
+		return err
+	}
+
+	// Check if the record was actually deleted
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		log.Printf("Error while checking rows affected: %s", err)
+		return err
+	}
+
+	if rowsAffected == 0 {
+		// No rows were affected, meaning the ID might not exist
+		log.Printf("No rows affected, possible non-existent ID: %s", id)
+		return nil
+	}
+
+	log.Printf("Deleted successfully")
+	return nil
+}
