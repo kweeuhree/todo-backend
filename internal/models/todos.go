@@ -148,6 +148,22 @@ func (m *TodoModel) Put(id string, body string) error {
 	return nil
 }
 
+// toggle status
+func (m *TodoModel) Toggle(id string) error {
+	// SQL statement we want to execute
+	stmt := `UPDATE todos SET status = !status WHERE id = ?`
+
+	// Execute the statement with the provided id and body
+	_, err := m.DB.Exec(stmt, id)
+	if err != nil {
+		log.Printf("Error while attempting todo status toggle %s", err)
+		return err
+	}
+
+	log.Printf("Status toggled successfully")
+	return nil
+}
+
 // delete
 func (m *TodoModel) Delete(id string) error {
 	// Execute the statement with the provided id

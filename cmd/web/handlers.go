@@ -8,9 +8,6 @@ import (
 	"net/http"
 	"strconv"
 
-	// validation
-	// validation
-	// validation
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter" // router
 	"todo-backend.kweeuhree/internal/models"
@@ -50,13 +47,8 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 
 // read
 func (app *application) todoView(w http.ResponseWriter, r *http.Request) {
-	// use the ParamsFromContext() function to retrieve a slice containing
-
-	// these parameter names and values like so:
+	// Get the value of the "id" named parameter
 	params := httprouter.ParamsFromContext(r.Context())
-
-	// We can then use the ByName() method to get the value of the "id" named
-	// parameter from the slice and validate it as normal.
 	id, err := strconv.Atoi(params.ByName("id"))
 
 	// return a 404 Not Found in case of invalid id or error
@@ -77,6 +69,7 @@ func (app *application) todoView(w http.ResponseWriter, r *http.Request) {
 	}
 
 	app.sessionManager.Put(r.Context(), "flash", "Todo successfully added!")
+
 	// write the todo data as a plain-text HTTP response body
 	fmt.Fprintf(w, "%+v", todo)
 }
@@ -144,20 +137,18 @@ func (app *application) todoCreate(w http.ResponseWriter, r *http.Request) {
 
 // update
 func (app *application) todoUpdate(w http.ResponseWriter, r *http.Request) {
-	log.Printf("attempting update")
+	log.Printf("Attempting update...")
 	// Set the Content-Type header to application/json
 	w.Header().Set("Content-Type", "application/json")
-	// these parameter names and values like so:
-	params := httprouter.ParamsFromContext(r.Context())
 
-	// We can then use the ByName() method to get the value of the "id" named
-	// parameter from the slice and validate it as normal.
+	// Get the value of the "id" named parameter
+	params := httprouter.ParamsFromContext(r.Context())
 	id := params.ByName("id")
-	log.Printf("current todo id: %s", id)
+	log.Printf("Current todo id: %s", id)
 
 	if id == "" {
 		app.notFound(w)
-		log.Printf("exiting due to id")
+		log.Printf("Exiting due to invalid id")
 		return
 	}
 
@@ -166,8 +157,8 @@ func (app *application) todoUpdate(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)
-		log.Printf("error message %s", err)
-		log.Printf("exiting after decoding attempt")
+		log.Printf("Exiting after decoding attempt...")
+		log.Printf("Error message %s", err)
 		return
 	}
 
@@ -208,22 +199,46 @@ func (app *application) todoUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// delete
-func (app *application) todoDelete(w http.ResponseWriter, r *http.Request) {
-	log.Printf("attempting delete")
+func (app *application) todoToggleStatus(w http.ResponseWriter, r *http.Request) {
+	log.Printf("Attempting status toggle...")
 	// Set the Content-Type header to application/json
 	w.Header().Set("Content-Type", "application/json")
-	// these parameter names and values like so:
-	params := httprouter.ParamsFromContext(r.Context())
 
-	// We can then use the ByName() method to get the value of the "id" named
-	// parameter from the slice and validate it as normal.
+	// Get the value of the "id" named parameter
+	params := httprouter.ParamsFromContext(r.Context())
 	id := params.ByName("id")
-	log.Printf("current todo id: %s", id)
+	log.Printf("Current todo id: %s", id)
 
 	if id == "" {
 		app.notFound(w)
-		log.Printf("exiting due to id")
+		log.Printf("Exiting due to invalid id")
+		return
+	}
+
+	// Delete the todo using the ID
+	err := app.todos.Toggle(id)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	app.sessionManager.Put(r.Context(), "flash", "This is a flash message!")
+}
+
+// delete
+func (app *application) todoDelete(w http.ResponseWriter, r *http.Request) {
+	log.Printf("Attempting deletion...")
+	// Set the Content-Type header to application/json
+	w.Header().Set("Content-Type", "application/json")
+
+	// Get the value of the "id" named parameter
+	params := httprouter.ParamsFromContext(r.Context())
+	id := params.ByName("id")
+	log.Printf("Current todo id: %s", id)
+
+	if id == "" {
+		app.notFound(w)
+		log.Printf("Exiting due to invalid id")
 		return
 	}
 
