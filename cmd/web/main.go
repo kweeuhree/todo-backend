@@ -97,6 +97,14 @@ func main() {
 		ErrorLog:  errorLog,
 		Handler:   app.routes(),
 		TLSConfig: tlsConfig,
+		// connection timeouts
+		// -- all keep-alive connections will be automatically closed
+		// -- after 1 minute of inactivity
+		IdleTimeout: time.Minute,
+		ReadTimeout: 5 * time.Second,
+		// -- prevent the data that the handler returns
+		// -- from taking too long to write
+		WriteTimeout: 10 * time.Second,
 	}
 
 	infoLog.Printf("Starting server on %s", *addr)
