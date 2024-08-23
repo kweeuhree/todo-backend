@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"database/sql"
 	"flag"
 	"fmt"
@@ -70,26 +71,11 @@ func main() {
 
 	// Create a new MySQL session store using the connection pool.
 	store := mysqlstore.New(db)
-
 	// Initialize a new session manager.
 	sessionManager := scs.New()
-
 	// Use the MySQL session store with the session manager.
 	sessionManager.Store = store
-
-	// initialize a new session manager, configure to use MySQL db
-	// set lifetime of 12 hours
-	// -- The scs.New() function returns a pointer to a SessionManager
-	// -- struct which holds configuration settings for sessions
-	// sessionManager := scs.New()
 	sessionManager.Lifetime = 12 * time.Hour
-	// sessionManager.Cookie.Name = "session_id"
-	// sessionManager.Cookie.Path = "/"
-	// sessionManager.Cookie.SameSite = http.SameSiteLaxMode
-	// sessionManager.Cookie.HttpOnly = true
-	// sessionManager.Cookie.Secure = false
-
-	// sessionManager.Store = mysqlstore.New(db)
 
 	app := &application{
 		errorLog:       errorLog,
@@ -98,16 +84,25 @@ func main() {
 		sessionManager: sessionManager,
 	}
 
+	// Initialize a tls.Config struct to hold the non-default TLS settings we
+	// want the server to use. In this case the only thing that we're
+	// changing is the curve preferences value, so that only elliptic curves with
+	// assembly implementations are used.
+	tlsConfig := &tls.Config{
+		CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
+	}
+
 	srv := &http.Server{
-		Addr:     *addr,
-		ErrorLog: errorLog,
-		Handler:  app.routes(),
+		Addr:      *addr,
+		ErrorLog:  errorLog,
+		Handler:   app.routes(),
+		TLSConfig: tlsConfig,
 	}
 
 	infoLog.Printf("Starting server on %s", *addr)
 
-	// use assignment operator as the err variable is already declared above
-	err = srv.ListenAndServe()
+	// ListenAndServeTLS() starts HTTPS server
+	err = srv.ListenAndServeTLS("./tls/cert.pem", "./tls/key.pem")
 	// in case of errors log and exit
 	errorLog.Fatal(err)
 }
