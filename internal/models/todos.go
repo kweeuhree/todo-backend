@@ -21,7 +21,7 @@ type TodoModel struct {
 }
 
 // insert a new todo into the database
-func (m *TodoModel) Insert(newId string, body string) (string, error) {
+func (m *TodoModel) Insert(newId, body string) (string, error) {
 	// use placeholder parameters instead of interpolating data in the SQL query
 	// as this is untrusted user input from a form
 	stmt := `INSERT INTO todos (id, body, created) 	VALUES(
@@ -133,7 +133,7 @@ func (m *TodoModel) All() ([]*Todo, error) {
 }
 
 // update
-func (m *TodoModel) Put(id string, body string) error {
+func (m *TodoModel) Put(id, body string) error {
 	// SQL statement we want to execute
 	stmt := `UPDATE todos SET body = ? WHERE id = ?`
 
