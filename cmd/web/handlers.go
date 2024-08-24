@@ -251,3 +251,19 @@ func (app *application) todoDelete(w http.ResponseWriter, r *http.Request) {
 
 	app.sessionManager.Put(r.Context(), "flash", "This is a flash message!")
 }
+
+// user authentication routes
+// sign up a new user
+func (app *application) userSignup(w http.ResponseWriter, r *http.Request) {
+	fmt.Println(w, "Create a new user...")
+}
+
+// authenticate and login the user
+func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
+	fmt.Println(w, "Authenticate and login the user...")
+}
+
+// logout the user
+func (app *application) userLogout(w http.ResponseWriter, r *http.Request) {
+	fmt.Println(w, "Logout the user...")
+}
