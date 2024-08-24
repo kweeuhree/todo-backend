@@ -23,11 +23,19 @@ func (app *application) routes() http.Handler {
 	dynamic := alice.New(app.sessionManager.LoadAndSave)
 
 	router.Handler(http.MethodGet, "/api", dynamic.ThenFunc(app.home))
-	router.Handler(http.MethodGet, "/api/todo/view", dynamic.ThenFunc(app.todoView))                      // fixed path
-	router.Handler(http.MethodPost, "/api/todo/create", dynamic.ThenFunc(app.todoCreate))                 // fixed path
-	router.Handler(http.MethodPut, "/api/todo/update/:id", dynamic.ThenFunc(app.todoUpdate))              // fixed path
-	router.Handler(http.MethodPut, "/api/todo/toggle-status/:id", dynamic.ThenFunc(app.todoToggleStatus)) // fixed path
-	router.Handler(http.MethodDelete, "/api/todo/delete/:id", dynamic.ThenFunc(app.todoDelete))           // fixed path
+	router.Handler(http.MethodGet, "/api/todo/view", dynamic.ThenFunc(app.todoView))
+	router.Handler(http.MethodPost, "/api/todo/create", dynamic.ThenFunc(app.todoCreate)) // fixed path
+	router.Handler(http.MethodPut, "/api/todo/update/:id", dynamic.ThenFunc(app.todoUpdate))
+	router.Handler(http.MethodPut, "/api/todo/toggle-status/:id", dynamic.ThenFunc(app.todoToggleStatus))
+	router.Handler(http.MethodDelete, "/api/todo/delete/:id", dynamic.ThenFunc(app.todoDelete))
+
+	// user routes
+	// create a new user
+	router.Handler(http.MethodPost, "/api/user/signup", dynamic.ThenFunc(app.userSignup))
+	// authenticate and login the user
+	router.Handler(http.MethodPost, "/api/user/login", dynamic.ThenFunc(app.userLogin))
+	// logout the user
+	router.Handler(http.MethodPost, "/api/user/logout", dynamic.ThenFunc(app.userLogout))
 	// router.Handler(http.MethodGet, "/api/test-cookie", dynamic.ThenFunc(app.testCookie))
 
 	// Create a middleware chain containing our 'standard' middleware
