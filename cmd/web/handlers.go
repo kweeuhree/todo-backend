@@ -27,6 +27,21 @@ type TodoResponse struct {
 	Flash string
 }
 
+// userSignUpInput struct for creating a new user
+type userSignUpInput struct {
+	Name                string `form:"name"`
+	Email               string `form:"email"`
+	Password            string `form:"password"`
+	validator.Validator `form: "-"`
+}
+
+type UserResponse struct {
+	Uuid  string `json:"uuid"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
+	Flash string
+}
+
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	todos, err := app.todos.All()
 	if err != nil {
@@ -76,6 +91,7 @@ func (app *application) todoView(w http.ResponseWriter, r *http.Request) {
 
 // create
 func (app *application) todoCreate(w http.ResponseWriter, r *http.Request) {
+
 	// check if method is POST
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", "POST")
@@ -255,7 +271,70 @@ func (app *application) todoDelete(w http.ResponseWriter, r *http.Request) {
 // user authentication routes
 // sign up a new user
 func (app *application) userSignup(w http.ResponseWriter, r *http.Request) {
-	fmt.Println(w, "Create a new user...")
+	fmt.Println(w, "Attempting to create a new user...")
+	// declare a zero-valued instance of userInput struct
+	var form userSignUpInput
+
+	// parse the form data into the struct
+	err := json.NewDecoder(r.Body).Decode(&form)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	log.Printf("Received new user details: %s", form)
+
+	// Validate the form contents using our helper functions.
+	form.CheckField(validator.NotBlank(form.Name), "name", "This field cannot be blank")
+	form.CheckField(validator.NotBlank(form.Email), "email", "This field cannot be blank")
+	form.CheckField(validator.Matches(form.Email, validator.EmailRX), "email", "This field must be a valid email address")
+	form.CheckField(validator.NotBlank(form.Password), "password", "This field cannot be blank")
+	form.CheckField(validator.MinChars(form.Password, 8), "password", "This field must be at least 8 characters long")
+
+	if !form.Valid() {
+		err := json.NewEncoder(w).Encode(form.FieldErrors)
+		if err != nil {
+			app.serverError(w, err)
+		}
+		return
+	}
+
+	newId := uuid.New().String()
+
+	// Try to create a new user record in the database. If the email already
+	// exists then add an error message to the form and re-display it.
+	err = app.users.Insert(newId, form.Name, form.Email, form.Password)
+
+	if err != nil {
+		if errors.Is(err, models.ErrDuplicateEmail) {
+			form.AddFieldError("email", "Email address is already in use")
+			app.errorLog.Printf("Failed adding user to database: %s", err)
+			json.NewEncoder(w).Encode(form.FieldErrors)
+		} else {
+			app.serverError(w, err)
+		}
+		return
+	}
+
+	// Create a response that includes both ID and body
+	response := UserResponse{
+		Uuid:  newId,
+		Name:  form.Name,
+		Email: form.Email,
+	}
+
+	// Otherwise add a confirmation flash message to the session confirming that
+	// their signup worked.
+	app.sessionManager.Put(r.Context(), "flash", "Your signup was successful. Please log in.")
+
+	// Write the response struct to the response as JSON
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	fmt.Println(w, "Created a new user...")
 }
 
 // authenticate and login the user

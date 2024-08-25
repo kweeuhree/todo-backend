@@ -30,6 +30,7 @@ import (
 type application struct {
 	errorLog       *log.Logger
 	infoLog        *log.Logger
+	users          *models.UserModel
 	todos          *models.TodoModel
 	sessionManager *scs.SessionManager
 }
@@ -80,6 +81,7 @@ func main() {
 	app := &application{
 		errorLog:       errorLog,
 		infoLog:        infoLog,
+		users:          &models.UserModel{DB: db},
 		todos:          &models.TodoModel{DB: db},
 		sessionManager: sessionManager,
 	}
