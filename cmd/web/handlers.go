@@ -140,10 +140,13 @@ func (app *application) todoCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	app.setFlash(r.Context(), "Todo has been created.")
+
 	// Create a response that includes both ID and body
 	response := TodoResponse{
-		ID:   id,
-		Body: input.Body,
+		ID:    id,
+		Body:  input.Body,
+		Flash: app.getFlash(r.Context()),
 	}
 
 	app.sessionManager.Put(r.Context(), "flash", "This is a flash message!")
@@ -204,13 +207,14 @@ func (app *application) todoUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	app.setFlash(r.Context(), "Todo has been updated.")
+
 	// Create a response that includes both ID and body
 	response := TodoResponse{
-		ID:   id,
-		Body: input.Body,
+		ID:    id,
+		Body:  input.Body,
+		Flash: app.getFlash(r.Context()),
 	}
-
-	app.sessionManager.Put(r.Context(), "flash", "This is a flash message!")
 
 	// Write the response struct to the response as JSON
 	err = json.NewEncoder(w).Encode(response)
@@ -242,8 +246,6 @@ func (app *application) todoToggleStatus(w http.ResponseWriter, r *http.Request)
 		app.serverError(w, err)
 		return
 	}
-
-	app.sessionManager.Put(r.Context(), "flash", "This is a flash message!")
 }
 
 // delete
@@ -269,8 +271,6 @@ func (app *application) todoDelete(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, err)
 		return
 	}
-
-	app.sessionManager.Put(r.Context(), "flash", "This is a flash message!")
 }
 
 // user authentication routes
