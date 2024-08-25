@@ -9,12 +9,17 @@ import (
 // Define a new Validator type which contains a map of validation errors for
 // our form fields.
 type Validator struct {
-	FieldErrors map[string]string
+	NonFieldErrors []string
+	FieldErrors    map[string]string
 }
 
-// Valid() returns true if the FieldErrors map doesn't contain any entries.
+// Valid() returns true if the FieldErrors and nonFieldErrors map doesn't contain any entries.
 func (v *Validator) Valid() bool {
-	return len(v.FieldErrors) == 0
+	return len(v.FieldErrors) == 0 && len(v.NonFieldErrors) == 0
+}
+
+func (v *Validator) AddNonFieldError(message string) {
+	v.NonFieldErrors = append(v.NonFieldErrors, message)
 }
 
 // W3C and Web Hypertext Application Technology Working Group recommended email checking pattern

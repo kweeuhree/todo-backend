@@ -61,8 +61,34 @@ VALUES(?, ?, ?, ?, UTC_TIMESTAMP())`
 
 // Authenticate method verifies whether a user exists with the provided email
 // and password. Returns relevant user ID
-func (m *UserModel) Authenticate(email, password string) (int, error) {
-	return 0, nil
+func (m *UserModel) Authenticate(email, password string) (string, error) {
+	// Retrieve the id and hashed password associated with the given email.
+
+	// If  no matching email exists we return the ErrInvalidCredentials error.
+	var uuid string
+	var hashedPassword []byte
+	stmt := "SELECT uuid, hashed_password FROM users WHERE email = ?"
+	err := m.DB.QueryRow(stmt, email).Scan(&uuid, &hashedPassword)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", ErrInvalidCredentials
+		} else {
+			return "", err
+		}
+	}
+	// Check whether the hashed password and plain-text password provided match.
+	// If they don't, we return the ErrInvalidCredentials error.
+	err = bcrypt.CompareHashAndPassword(hashedPassword, []byte(password))
+	if err != nil {
+		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+			return "", ErrInvalidCredentials
+		} else {
+			return "", err
+		}
+	}
+	// Otherwise, the password is correct. Return the user ID.
+	return uuid, nil
+
 }
 
 // Exists method checks if a user exists with a specific ID.

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"runtime/debug"
@@ -36,4 +37,14 @@ func (app *application) clientError(w http.ResponseWriter, status int) {
 // response to the user.
 func (app *application) notFound(w http.ResponseWriter) {
 	app.clientError(w, http.StatusNotFound)
+}
+
+// Helper method to set a flash message in the session
+func (app *application) setFlash(ctx context.Context, message string) {
+	app.sessionManager.Put(ctx, "flash", message)
+}
+
+// Helper method to get and clear the flash message from the session
+func (app *application) getFlash(ctx context.Context) string {
+	return app.sessionManager.PopString(ctx, "flash")
 }
