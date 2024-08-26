@@ -420,5 +420,41 @@ func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
 
 // logout the user
 func (app *application) userLogout(w http.ResponseWriter, r *http.Request) {
-	fmt.Println(w, "Logout the user...")
+	fmt.Println(w, "Attempting to logout the user...")
+
+	// Decode the form data into the userLoginForm struct.
+	var form userLoginInput
+	// parse the form data into the struct
+	err := json.NewDecoder(r.Body).Decode(&form)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	// change session ID
+	err = app.sessionManager.RenewToken(r.Context())
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	// remove authenticatedUserID from the session data so that the user is logged out
+	app.sessionManager.Remove(r.Context(), "authenticatedUserID")
+	app.setFlash(r.Context(), "You've been logged out successfully!")
+
+	// Create a response that includes both ID and body
+	response := UserResponse{
+		Email: form.Email,
+		Flash: app.getFlash(r.Context()),
+	}
+
+	// Write the response struct to the response as JSON
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	fmt.Println(w, "Logged out the user")
+
 }
