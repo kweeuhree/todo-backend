@@ -2,9 +2,12 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"runtime/debug"
+
+	"todo-backend.kweeuhree/internal/validator"
 )
 
 // The serverError helper writes an error message and stack trace to the errorLog,
@@ -39,6 +42,21 @@ func (app *application) notFound(w http.ResponseWriter) {
 	app.clientError(w, http.StatusNotFound)
 }
 
+func decodeJSON(w http.ResponseWriter, r *http.Request, dst interface{}) error {
+	err := json.NewDecoder(r.Body).Decode(dst)
+	if err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return err
+	}
+	return nil
+}
+
+func encodeJSON(w http.ResponseWriter, status int, data interface{}) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	return json.NewEncoder(w).Encode(data)
+}
+
 // Helper method to set a flash message in the session
 func (app *application) setFlash(ctx context.Context, message string) {
 	app.sessionManager.Put(ctx, "flash", message)
@@ -47,4 +65,17 @@ func (app *application) setFlash(ctx context.Context, message string) {
 // Helper method to get and clear the flash message from the session
 func (app *application) getFlash(ctx context.Context) string {
 	return app.sessionManager.PopString(ctx, "flash")
+}
+
+func (input *TodoInput) Validate() {
+	input.CheckField(validator.NotBlank(input.Body), "body", "This field cannot be blank")
+	input.CheckField(validator.MaxChars(input.Body, 200), "body", "This field cannot be more than 200 characters long")
+}
+
+func (form *userSignUpInput) Validate() {
+	form.CheckField(validator.NotBlank(form.Name), "name", "This field cannot be blank")
+	form.CheckField(validator.NotBlank(form.Email), "email", "This field cannot be blank")
+	form.CheckField(validator.Matches(form.Email, validator.EmailRX), "email", "This field must be a valid email address")
+	form.CheckField(validator.NotBlank(form.Password), "password", "This field cannot be blank")
+	form.CheckField(validator.MinChars(form.Password, 8), "password", "This field must be at least 8 characters long")
 }
