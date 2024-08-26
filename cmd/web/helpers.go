@@ -79,3 +79,12 @@ func (form *userSignUpInput) Validate() {
 	form.CheckField(validator.NotBlank(form.Password), "password", "This field cannot be blank")
 	form.CheckField(validator.MinChars(form.Password, 8), "password", "This field must be at least 8 characters long")
 }
+
+// checks that email and password are provided
+// and also check the format of the email address as
+// a UX-nicety (in case the user makes a typo).
+func (form *userLoginInput) Validate() {
+	form.CheckField(validator.NotBlank(form.Email), "email", "This field cannot be blank")
+	form.CheckField(validator.Matches(form.Email, validator.EmailRX), "email", "This field must be a valid email address")
+	form.CheckField(validator.NotBlank(form.Password), "password", "This field cannot be blank")
+}

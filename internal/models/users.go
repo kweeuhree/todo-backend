@@ -71,7 +71,7 @@ func (m *UserModel) Authenticate(email, password string) (string, error) {
 	err := m.DB.QueryRow(stmt, email).Scan(&uuid, &hashedPassword)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return "", ErrInvalidCredentials
+			return "Invalid credentials", ErrInvalidCredentials
 		} else {
 			return "", err
 		}
@@ -81,7 +81,7 @@ func (m *UserModel) Authenticate(email, password string) (string, error) {
 	err = bcrypt.CompareHashAndPassword(hashedPassword, []byte(password))
 	if err != nil {
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-			return "", ErrInvalidCredentials
+			return "Invalid credentials", ErrInvalidCredentials
 		} else {
 			return "", err
 		}

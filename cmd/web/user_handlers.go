@@ -40,25 +40,25 @@ func (app *application) userSignup(w http.ResponseWriter, r *http.Request) {
 	var form userSignUpInput
 
 	// parse the form data into the struct
-	err := json.NewDecoder(r.Body).Decode(&form)
+	err := decodeJSON(w, r, &form)
 	if err != nil {
-		app.clientError(w, http.StatusBadRequest)
 		return
 	}
 
 	log.Printf("Received new user details: %s", form)
 
 	// Validate the form contents using our helper functions.
-	form.CheckField(validator.NotBlank(form.Name), "name", "This field cannot be blank")
-	form.CheckField(validator.NotBlank(form.Email), "email", "This field cannot be blank")
-	form.CheckField(validator.Matches(form.Email, validator.EmailRX), "email", "This field must be a valid email address")
-	form.CheckField(validator.NotBlank(form.Password), "password", "This field cannot be blank")
-	form.CheckField(validator.MinChars(form.Password, 8), "password", "This field must be at least 8 characters long")
-
+	// form.CheckField(validator.NotBlank(form.Name), "name", "This field cannot be blank")
+	// form.CheckField(validator.NotBlank(form.Email), "email", "This field cannot be blank")
+	// form.CheckField(validator.Matches(form.Email, validator.EmailRX), "email", "This field must be a valid email address")
+	// form.CheckField(validator.NotBlank(form.Password), "password", "This field cannot be blank")
+	// form.CheckField(validator.MinChars(form.Password, 8), "password", "This field must be at least 8 characters long")
+	form.Validate()
 	if !form.Valid() {
-		err := json.NewEncoder(w).Encode(form.FieldErrors)
+		err := encodeJSON(w, http.StatusOK, form.FieldErrors)
 		if err != nil {
-			app.serverError(w, err)
+			// app.serverError(w, err)
+			json.NewEncoder(w).Encode(err)
 		}
 		return
 	}
@@ -90,7 +90,7 @@ func (app *application) userSignup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Write the response struct to the response as JSON
-	err = json.NewEncoder(w).Encode(response)
+	err = encodeJSON(w, http.StatusOK, response)
 	if err != nil {
 		app.serverError(w, err)
 		return
@@ -106,25 +106,21 @@ func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
 	// Decode the form data into the userLoginForm struct.
 	var form userLoginInput
 	// parse the form data into the struct
-	err := json.NewDecoder(r.Body).Decode(&form)
+	err := decodeJSON(w, r, &form)
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)
+		json.NewEncoder(w).Encode(err)
 		return
 	}
 
 	log.Printf("Attempting to authenticate user: %s", form)
 
-	// checks that email and password are provided
-	// and also check the format of the email address as
-
-	// a UX-nicety (in case the user makes a typo).
-	form.CheckField(validator.NotBlank(form.Email), "email", "This field cannot be blank")
-	form.CheckField(validator.Matches(form.Email, validator.EmailRX), "email", "This field must be a valid email address")
-	form.CheckField(validator.NotBlank(form.Password), "password", "This field cannot be blank")
-
+	// validate input
+	form.Validate()
 	if !form.Valid() {
-		err := json.NewEncoder(w).Encode(form.FieldErrors)
+		err := encodeJSON(w, http.StatusOK, form.FieldErrors)
 		if err != nil {
+			json.NewEncoder(w).Encode(form.FieldErrors)
 			app.serverError(w, err)
 		}
 		return
@@ -133,12 +129,11 @@ func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
 	// Check whether the credentials are valid. If they're not, add a generic
 	// non-field error message and re-display the login page.
 	id, err := app.users.Authenticate(form.Email, form.Password)
-
 	if err != nil {
-		if errors.Is(err, models.ErrDuplicateEmail) {
+		if errors.Is(err, models.ErrInvalidCredentials) {
 			form.AddNonFieldError("Email or password is incorrect")
 			app.errorLog.Printf("Failed adding user to database: %s", err)
-			json.NewEncoder(w).Encode(form.FieldErrors)
+			json.NewEncoder(w).Encode("Invalid credentials")
 		} else {
 			app.serverError(w, err)
 		}
@@ -154,10 +149,9 @@ func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, err)
 		return
 	}
-	// Log the user in
-	app.sessionManager.Put(r.Context(), "authenticatedUserID", id)
 
 	// Set the flash message
+	app.sessionManager.Put(r.Context(), "authenticatedUserID", id)
 	app.setFlash(r.Context(), "Login successful!")
 
 	// Create a response that includes both ID and body
@@ -168,7 +162,7 @@ func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Write the response struct to the response as JSON
-	err = json.NewEncoder(w).Encode(response)
+	err = encodeJSON(w, http.StatusOK, response)
 	if err != nil {
 		app.serverError(w, err)
 		return
@@ -184,9 +178,9 @@ func (app *application) userLogout(w http.ResponseWriter, r *http.Request) {
 	// Decode the form data into the userLoginForm struct.
 	var form userLoginInput
 	// parse the form data into the struct
-	err := json.NewDecoder(r.Body).Decode(&form)
+	err := decodeJSON(w, r, &form)
 	if err != nil {
-		app.clientError(w, http.StatusBadRequest)
+		json.NewEncoder(w).Encode(err)
 		return
 	}
 
@@ -208,9 +202,10 @@ func (app *application) userLogout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Write the response struct to the response as JSON
-	err = json.NewEncoder(w).Encode(response)
+	err = encodeJSON(w, http.StatusOK, response)
 	if err != nil {
 		app.serverError(w, err)
+		json.NewEncoder(w).Encode(err)
 		return
 	}
 
