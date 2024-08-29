@@ -101,74 +101,66 @@ func (app *application) userSignup(w http.ResponseWriter, r *http.Request) {
 
 // authenticate and login the user
 func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
-	fmt.Println(w, "Attempting to authenticate and login the user...")
+	fmt.Println("Attempting to authenticate and login the user...")
 
-	// Decode the form data into the userLoginForm struct.
+	// Decode the form data into the userLoginInput struct
 	var form userLoginInput
-	// parse the form data into the struct
-	err := decodeJSON(w, r, &form)
-	if err != nil {
+	if err := decodeJSON(w, r, &form); err != nil {
 		app.clientError(w, http.StatusBadRequest)
-		json.NewEncoder(w).Encode(err)
 		return
 	}
 
 	log.Printf("Attempting to authenticate user: %s", form)
 
-	// validate input
+	// Validate input
 	form.Validate()
 	if !form.Valid() {
-		err := encodeJSON(w, http.StatusOK, form.FieldErrors)
-		if err != nil {
-			json.NewEncoder(w).Encode(form.FieldErrors)
+		if err := encodeJSON(w, http.StatusOK, form.FieldErrors); err != nil {
 			app.serverError(w, err)
+			return
 		}
 		return
 	}
 
-	// Check whether the credentials are valid. If they're not, add a generic
-	// non-field error message and re-display the login page.
+	// Check credentials
 	id, err := app.users.Authenticate(form.Email, form.Password)
 	if err != nil {
 		if errors.Is(err, models.ErrInvalidCredentials) {
 			form.AddNonFieldError("Email or password is incorrect")
-			app.errorLog.Printf("Failed adding user to database: %s", err)
-			json.NewEncoder(w).Encode("Invalid credentials")
+			if encodeErr := encodeJSON(w, http.StatusUnauthorized, form.FieldErrors); encodeErr != nil {
+				app.serverError(w, encodeErr)
+				return
+			}
 		} else {
 			app.serverError(w, err)
 		}
 		return
 	}
 
-	// Use the RenewToken() method on the current session to change the
-	// session ID. It's good practice to generate a new session ID when the
-	// authentication state or privilege levels changes for the user (e.g.
-	// login and logout operations).
-	err = app.sessionManager.RenewToken(r.Context())
-	if err != nil {
+	// Renew session token
+	if err := app.sessionManager.RenewToken(r.Context()); err != nil {
 		app.serverError(w, err)
 		return
 	}
 
-	// Set the flash message
+	// Set flash message
 	app.sessionManager.Put(r.Context(), "authenticatedUserID", id)
 	app.setFlash(r.Context(), "Login successful!")
 
-	// Create a response that includes both ID and body
+	// Create response
 	response := UserResponse{
 		Uuid:  id,
 		Email: form.Email,
 		Flash: app.getFlash(r.Context()),
 	}
 
-	// Write the response struct to the response as JSON
-	err = encodeJSON(w, http.StatusOK, response)
-	if err != nil {
+	// Write response
+	if err := encodeJSON(w, http.StatusOK, response); err != nil {
 		app.serverError(w, err)
 		return
 	}
 
-	fmt.Println(w, "Authenticated and logged user with ID %d", id)
+	fmt.Printf("Authenticated and logged user with ID %d\n", id)
 }
 
 // logout the user

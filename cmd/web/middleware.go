@@ -8,6 +8,8 @@ import (
 
 	// environment variables
 	"github.com/joho/godotenv"
+	// double submit cookies
+	"github.com/justinas/nosurf"
 )
 
 func secureHeaders(next http.Handler) http.Handler {
@@ -37,6 +39,55 @@ func secureHeaders(next http.Handler) http.Handler {
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
 		next.ServeHTTP(w, r)
 	})
+}
+
+func (app *application) requireAuthentication(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// if the user is not authenticated, redirect them to the login page and
+		// return from the middleware chain so that no subsequent handlers in
+		// the chain are executed.
+		if !app.isAuthenticated(r) {
+			response := map[string]string{
+				"status":  "401 Unauthorized",
+				"message": "You must be logged in to access this resource",
+			}
+			encodeJSON(w, http.StatusUnauthorized, response)
+			return
+		}
+		// Otherwise set the "Cache-Control: no-store" header so that pages
+		// require authentication are not stored in the users browser cache
+		// (or other intermediary cache).
+		w.Header().Add("Cache-Control", "no-store")
+		// And call the next handler in the chain.
+		next.ServeHTTP(w, r)
+	})
+}
+
+// Create a NoSurf middleware function which uses a customized CSRF cookie
+// with the Secure, Path and HttpOnly attributes set.
+func noSurf(next http.Handler) http.Handler {
+	csrfHandler := nosurf.New(next)
+	csrfHandler.SetBaseCookie(http.Cookie{
+		HttpOnly: true,
+		Path:     "/",
+		Secure:   true,
+	})
+	return csrfHandler
+}
+
+// Returns the CSRF token as a JSON response
+func (app *application) CSRFToken(w http.ResponseWriter, r *http.Request) {
+	token := nosurf.Token(r)
+	if token == "" {
+		app.errorLog.Println("CSRF token is empty")
+	} else {
+		app.infoLog.Println("CSRF token generated:", token)
+	}
+
+	err := encodeJSON(w, http.StatusOK, map[string]string{"csrf_token": token})
+	if err != nil {
+		app.serverError(w, err)
+	}
 }
 
 func (app *application) logRequest(next http.Handler) http.Handler {

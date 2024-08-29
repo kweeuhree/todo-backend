@@ -91,6 +91,10 @@ func main() {
 	// changing is the curve preferences value, so that only elliptic curves with
 	// assembly implementations are used.
 	tlsConfig := &tls.Config{
+		// if you were to make TLS 1.3 the minimum supported
+		// version in the TLS config for your server, then all browsers able to
+		// use your application will support SameSite cookies
+		MinVersion:       tls.VersionTLS13,
 		CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
 	}
 
