@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter" // router
@@ -21,7 +22,7 @@ func (app *application) routes() http.Handler {
 	router.Handler(http.MethodGet, "/static/*filepath", http.StripPrefix("/static", fileServer))
 
 	// uprotected application routes using the "dynamic" middleware chain, use nosurf middleware
-	dynamic := alice.New(app.sessionManager.LoadAndSave, noSurf)
+	dynamic := alice.New(app.sessionManager.LoadAndSave, noSurf, app.authenticate)
 
 	// todo routes
 	router.Handler(http.MethodGet, "/api", dynamic.ThenFunc(app.home))
@@ -39,6 +40,7 @@ func (app *application) routes() http.Handler {
 
 	// protected application routes, which uses requireAuthentication middleware
 	protected := dynamic.Append(app.requireAuthentication)
+	log.Println("Setting up protected routes...")
 	router.Handler(http.MethodPost, "/api/todo/create", protected.ThenFunc(app.todoCreate)) // fixed path
 	router.Handler(http.MethodPut, "/api/todo/update/:id", protected.ThenFunc(app.todoUpdate))
 	router.Handler(http.MethodPut, "/api/todo/toggle-status/:id", protected.ThenFunc(app.todoToggleStatus))

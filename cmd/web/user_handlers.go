@@ -160,24 +160,15 @@ func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Printf("Authenticated and logged user with ID %d\n", id)
+	fmt.Printf("Authenticated and logged user with ID %s", id)
 }
 
 // logout the user
 func (app *application) userLogout(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(w, "Attempting to logout the user...")
 
-	// Decode the form data into the userLoginForm struct.
-	var form userLoginInput
-	// parse the form data into the struct
-	err := decodeJSON(w, r, &form)
-	if err != nil {
-		json.NewEncoder(w).Encode(err)
-		return
-	}
-
 	// change session ID
-	err = app.sessionManager.RenewToken(r.Context())
+	err := app.sessionManager.RenewToken(r.Context())
 	if err != nil {
 		app.serverError(w, err)
 		return
@@ -189,7 +180,6 @@ func (app *application) userLogout(w http.ResponseWriter, r *http.Request) {
 
 	// Create a response that includes both ID and body
 	response := UserResponse{
-		Email: form.Email,
 		Flash: app.getFlash(r.Context()),
 	}
 
@@ -202,5 +192,4 @@ func (app *application) userLogout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Println(w, "Logged out the user")
-
 }
